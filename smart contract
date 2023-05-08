@@ -1,0 +1,89 @@
+// Importe o contrato ERC-721 para criar o NFT
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+pragma solidity ^0.8.0;
+
+contract ConformidadeTrabalhista is ERC721 {
+    
+    // Definição dos critérios e requisitos da OMT
+    uint256 public salarioMinimo = 1392;
+    uint256 public jornadaMaximaSemanal = 44;
+    uint256 public folgaSemanalObrig = 1;
+    uint256 public feriasMinimasAnuais = 30;
+    uint256 public idadeMinimaTrabalho = 18;
+    uint256 public proibicaoTrabalhoInfantil = 1;
+    uint256 public proibicaoTrabalhoForcado = 1;
+    uint256 public segurancaTrabalho = 1;
+    
+    // Eventos
+    event VerificacaoConformidade(address indexed fornecedor, bool conformidade);
+    
+    // Estrutura de dados para informações do fornecedor
+    struct InformacoesFornecedor {
+        uint256 salario;
+        uint256 jornadaSemanal;
+        uint256 folgaSemanal;
+        uint256 feriasAnuais;
+        uint256 idade;
+        uint256 trabalhoInfantil;
+        uint256 trabalhoForcado;
+        uint256 seguranca;
+    }
+    
+    // Mapeamento dos fornecedores e suas informações
+    mapping (address => InformacoesFornecedor) public fornecedores;
+    
+    // Crie um novo token
+    uint256 public tokenCounter;
+    mapping(uint256 => string) tokenURIs;
+    
+    // Construtor para inicializar o contrato do ERC-721
+    constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {
+        
+    }
+    
+    // Função para o fornecedor fornecer suas informações e criar um NFT
+    function fornecerInformacoesECriarNFT(uint256 salario, uint256 jornadaSemanal, uint256 folgaSemanal, 
+    uint256 feriasAnuais, uint256 idade, uint256 trabalhoInfantil, uint256 trabalhoForcado, uint256 seguranca, string memory tokenURI) public {
+        
+        // Verifica a conformidade com as políticas da OMT
+        bool conformidade = verificarConformidade(msg.sender);
+     
+                // Se o fornecedor estiver em conformidade, crie o NFT
+        if (conformidade == true) {
+            
+            // Salva as informações do fornecedor no mapeamento
+            fornecedores[msg.sender] = InformacoesFornecedor(salario, jornadaSemanal, folgaSemanal, feriasAnuais, idade, trabalhoInfantil, trabalhoForcado, seguranca);
+            
+            // Crie um novo token
+            uint256 novoTokenId = tokenCounter;
+            _safeMint(msg.sender, novoTokenId);
+            tokenURIs[novoTokenId] = tokenURI;
+            
+            // Atualize o contador de tokens
+            tokenCounter++;
+        }
+        
+        // Dispara um evento informando a conformidade do fornecedor
+        emit VerificacaoConformidade(msg.sender, conformidade);
+}
+// Função para verificar a conformidade com as políticas da OMT
+function verificarConformidade(address fornecedor) public view returns (bool) {
+    InformacoesFornecedor memory info = fornecedores[fornecedor];
+    
+    // Verifica se o fornecedor atende a todos os critérios da OMT
+    if (info.salario < salarioMinimo ||
+        info.jornadaSemanal > jornadaMaximaSemanal ||
+        info.folgaSemanal < folgaSemanalObrig ||
+        info.feriasAnuais < feriasMinimasAnuais ||
+        info.idade < idadeMinimaTrabalho ||
+        info.trabalhoInfantil > proibicaoTrabalhoInfantil ||
+        info.trabalhoForcado > proibicaoTrabalhoForcado ||
+        info.seguranca < segurancaTrabalho) {
+        return false;
+    }
+    return true;
+}
+
+
+}
